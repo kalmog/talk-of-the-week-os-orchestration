@@ -1,3 +1,3 @@
 #!/bin/bash
 
-sudo python -m SimpleHTTPServer 80
+python -m SimpleHTTPServer 8000

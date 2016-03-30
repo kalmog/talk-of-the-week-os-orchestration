@@ -3,7 +3,7 @@ https://www.terraform.io/
 
 
 Terrform is developed by 
-##Hashimoto corp
+##Hashicorp
 And can be downloaded from
 https://www.terraform.io/downloads.html
 

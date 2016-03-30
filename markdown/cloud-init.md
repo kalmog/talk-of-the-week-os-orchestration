@@ -1,3 +1,7 @@
+##Configuring your 
+##Instance
+
+
 Nova
 ## user data
 
@@ -152,33 +156,6 @@ puppet:
 ```
 
 
-# `chef`
-Configure a VM's Chef client
-
-
-```yaml
-chef:
- install_type: "packages"
- force_install: false
- server_url: "https://chef.yourorg.com:4000"
- node_name: "your-node-name"
- environment: "production"
- validation_name: "yourorg-validator"
- validation_key: |
-     -----BEGIN RSA PRIVATE KEY-----
-     YOUR-ORGS-VALIDATION-KEY-HERE
-     -----END RSA PRIVATE KEY-----
- run_list:
-  - "recipe[apache2]"
-  - "role[db]"
- initial_attributes:
-    apache:
-      prefork:
-        maxclients: 100
-      keepalive: "off"
-```
-
-
 # `packages`
 Install packages
 
@@ -265,4 +242,45 @@ resources:
         - port: { get_resource: mybox_management_port }
       user_data: { get_resource: myconfig }
       user_data_format: RAW
+```
+
+
+Integrating
+# Terraform
+with
+## `cloud-init`
+
+
+Instead of using a
+##static 
+cloud-config file
+
+
+Let's create a
+#template
+
+
+```
+resource "template_file" "genesis-config" {
+  template = "${file("user-data/genesis/genesis-cloud-init.yml")}"
+  vars {
+    cloud_zone    = "${var.cloud_zone}"
+    puppet_stage  = "${var.puppet_stage}"
+    consul_domain = "${var.consul_domain}"
+    consul_dc     = "${var.consul_dc}"
+  }
+}
+```
+
+
+```
+resource "openstack_compute_instance_v2" "Genesis" {
+  name = "genesis44-1"
+  image_name = "mobile_genesis"
+  flavor_name = "${var.genesis-flavor}"
+  user_data = "${template_file.genesis-config.rendered}"
+  key_pair = "${var.key-pair}"
+  security_groups = ["base_security_group"]
+  depends_on = [ "openstack_compute_secgroup_v2.base" ]
+}
 ```
