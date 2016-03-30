@@ -216,3 +216,53 @@ runcmd:
     -U https://github.com/hastexo/academy-ansible 
     -o site.yml
 ```
+
+
+Integrating
+# Heat
+with
+## `cloud-init`
+
+
+```
+  mybox:
+    type: "OS::Nova::Server"
+    properties:
+      name: deploy
+      image: { get_param: image }
+      flavor: { get_param: flavor }
+      key_name: { get_param: key_name }
+      networks:
+        - port: { get_resource: mybox_management_port }
+      user_data: { get_file: cloud-config.yml }
+      user_data_format: RAW
+```
+
+
+### `OS::Heat::CloudConfig`
+Manages `cloud-config` directly from Heat
+
+
+```
+resources:
+  myconfig:
+    type: "OS::Heat::CloudConfig"
+    properties:
+      cloud_config:
+        package_update: true
+        package_upgrade: true
+```
+
+```
+  mybox:
+    type: "OS::Nova::Server"
+    properties:
+      name: deploy
+      image: { get_param: image }
+      flavor: { get_param: flavor }
+      key_name: { get_param: key_name }
+      networks:
+        - port: { get_resource: mybox_management_port }
+      user_data: { get_resource: myconfig }
+      user_data_format: RAW
+```

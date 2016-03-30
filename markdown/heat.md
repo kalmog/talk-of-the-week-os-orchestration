@@ -1,11 +1,45 @@
+## Provisioing
+(Automating VM install in Openstack)
+
+
 # Heat
-(not an acronym)
+https://wiki.openstack.org/wiki/Heat
 
 
 # Heat
 enables you to deploy
 ## complete
 virtual environments
+
+
+###Installing the
+## Heat Client
+```
+    apt-get install python-heatclient
+```
+
+
+##Subcommands
+```
+    output-list         Show available outputs.
+    output-show         Show a specific stack output.
+    resource-list       Show list of resources belonging to a stack.
+    resource-metadata   List resource metadata.
+    resource-show       Describe the resource.
+    resource-signal     Send a signal to a resource.
+    resource-template   Generate a template based on a resource.
+    resource-type-list  List the available resource types.
+    resource-type-show  Show the resource type.
+    stack-abandon       Abandon the stack.
+    stack-adopt         Adopt a stack.
+    stack-create        Create the stack.
+    stack-delete        Delete the stack(s).
+    stack-list          List the user's stacks.
+    stack-show          Describe the stack.
+    stack-update        Update the stack.
+    template-show       Get the template for the specified stack.
+    template-validate   Validate a template with parameters.
+```
 
 
 ## Heat
@@ -114,86 +148,15 @@ How about we add some
 Wouldn't that be nice?
 
 
-### `OS::Neutron::Net`
-### `OS::Neutron::Subnet`
-Defines Neutron networks
+### `OS::Neutron::FloatingIP`
+Allocates floating IP addresses
 
 
 ```
-  mynet:
-    type: "OS::Neutron::Net"
+  myfloating_ip:
+    type: "OS::Neutron::FloatingIP"
     properties:
-      name: management-net
-
-  mysub_net:
-    type: "OS::Neutron::Subnet"
-    properties:
-      name: management-sub-net
-      network: { get_resource: management_net }
-      cidr: 192.168.122.0/24
-      gateway_ip: 192.168.101.1
-      enable_dhcp: true
-      allocation_pools: 
-        - start: "192.168.101.2"
-          end: "192.168.101.50"
-```
-
-
-## `get_resource`
-Cross-reference between resources
-
-Automatic dependency
-
-
-### `OS::Neutron::Router`
-### `OS::Neutron::RouterGateway`
-### `OS::Neutron::RouterInterface`
-Configures Neutron routers
-
-
-```
-parameters:
-  public_net:
-    type: string
-    description: Public network ID or name
-
-resources:
-  router:
-    type: OS::Neutron::Router
-  router_gateway:
-    type: OS::Neutron::RouterGateway
-    properties:
-      router: { get_resource: router }
-      network: { get_param: public_net }
-  router_interface:
-    type: OS::Neutron::RouterInterface
-    properties:
-      router: { get_resource: router }
-      subnet: { get_resource: mysub_net }
-```
-
-
-### `OS::Neutron::Port`
-Configures Neutron ports
-
-
-```
-  mybox_management_port:
-    type: "OS::Neutron::Port"
-    properties:
-      network: { get_resource: mynet }
-```
-
-```
-  mybox:
-    type: "OS::Nova::Server"
-    properties:
-      name: deploy
-      image: { get_param: image }
-      flavor: { get_param: flavor }
-      key_name: { get_param: key_name }
-      networks:
-        - port: { get_resource: mybox_management_port }
+      floating_network: { get_param: public_net }
 ```
 
 
@@ -217,27 +180,35 @@ Configures Neutron security groups
         direction: ingress
 ```
 
+
+## `get_resource`
+Cross-reference between resources
+
+Automatic dependency
+
+
 ```
-  mybox_management_port:
-    type: "OS::Neutron::Port"
+resources:
+  mybox:
+    type: "OS::Nova::Server"
     properties:
-      network: { get_resource: mynet }
-      security_groups:
-        - { get_resource: mysecurity_group }
+      name: mybox
+      image: { get_param: image }
+      flavor: { get_param: flavor }
+      key_name: { get_param: key_name }
+      security_groups: [{ get_resource: mysecurity_group }]
 ```
 
 
-### `OS::Neutron::FloatingIP`
-Allocates floating IP addresses
+### `OS::Neutron::Net`
+### `OS::Neutron::Subnet`
+Defines Neutron networks
 
 
-```
-  myfloating_ip:
-    type: "OS::Neutron::FloatingIP"
-    properties:
-      floating_network: { get_param: public_net }
-      port: { get_resource: mybox_management_port }
-```
+### `OS::Neutron::Router`
+### `OS::Neutron::RouterGateway`
+### `OS::Neutron::RouterInterface`
+Configures Neutron routers
 
 
 ### `outputs`
@@ -255,93 +226,4 @@ outputs:
 ```sh
 heat output-show \
   mystack public_ip
-```
-
-
-Integrating
-# Heat
-with
-## `cloud-init`
-
-
-```
-  mybox:
-    type: "OS::Nova::Server"
-    properties:
-      name: deploy
-      image: { get_param: image }
-      flavor: { get_param: flavor }
-      key_name: { get_param: key_name }
-      networks:
-        - port: { get_resource: mybox_management_port }
-      user_data: { get_file: cloud-config.yml }
-      user_data_format: RAW
-```
-
-
-### `OS::Heat::CloudConfig`
-Manages `cloud-config` directly from Heat
-
-
-```
-resources:
-  myconfig:
-    type: "OS::Heat::CloudConfig"
-    properties:
-      cloud_config:
-        package_update: true
-        package_upgrade: true
-```
-
-```
-  mybox:
-    type: "OS::Nova::Server"
-    properties:
-      name: deploy
-      image: { get_param: image }
-      flavor: { get_param: flavor }
-      key_name: { get_param: key_name }
-      networks:
-        - port: { get_resource: mybox_management_port }
-      user_data: { get_resource: myconfig }
-      user_data_format: RAW
-```
-
-
-Now we can also
-# set
-### `cloud-config` parameters
-directly from Heat
-
-
-```
-parameters:
-  # [...]
-  username:
-    type: string
-    description: Additional login username
-    default: foobar
-  gecos:
-    type: string
-    description: Additional user full name
-    default: ''
-```
-
-```
-  myconfig:
-    type: "OS::Heat::CloudConfig"
-    properties:
-      cloud_config:
-        package_update: true
-        package_upgrade: true
-        users:
-        - default
-        - name: { get_param: username }
-          gecos: { get_param: gecos }
-          groups: "users,adm"
-          lock-passwd: false
-          passwd: '$6$WP9924IJiLSto8Ng$MSDwCvlT28jM'
-          shell: "/bin/bash"
-          sudo: "ALL=(ALL) NOPASSWD:ALL"
-        ssh_pwauth: true
 ```
