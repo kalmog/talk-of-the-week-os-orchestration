@@ -7,6 +7,10 @@ Inside and Out
 Karen Almog, [`kalmog@ebay.com`](mailto:kalmog@ebay.com)
 
 
+You can follow along here:
+https://github.corp.ebay.com/kalmog/talk-of-the-week-os-orchestration
+
+
 A few
 # words
 to start with
